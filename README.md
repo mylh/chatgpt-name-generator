@@ -46,7 +46,7 @@ export OPENAI_API_KEY="your_api_key"  # On Windows, use `set OPENAI_API_KEY=your
 Run the `namegen.py` script with a description of your startup:
 
 ```bash
-python namegen.py --prompt "A platform for connecting freelance designers with clients"
+python namegen.py --prompt "A platform for connecting freelance designers with clients" --tld="com"
 ```
 
 The script will generate a list of potential startup names and check the availability of the corresponding domain names. The results will be displayed in the terminal.
@@ -55,41 +55,30 @@ The script will generate a list of potential startup names and check the availab
 
 ```
 Getting Ideas for "A platform for connecting freelance designers with clients"...
-Generated names: DesignCloud, DesignerLink, FreelanceMatch, CreativePair, ArtHive, TalentBridge, StudioMate, DesignerDash, GraphiConnect, WorkCanvas.
-Checking https://designcloud.io
+Generated names: PixelMatch, DesignHive, WorkPalette, Artista, BrightCrowd, TalentedTies, DesignDuo, CreateConnect, DesignVine, ProPalette.
+Checking https://pixelmatch.com
 ✗ Got DNS response
-Checking https://designerlink.io
-Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
-✔ Domain designerlink.io is available!
-Checking https://freelancematch.io
+Checking https://designhive.com
 ✗ Got DNS response
-Checking https://creativepair.io
-Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
-✔ Domain creativepair.io is available!
-Checking https://arthive.io
+Checking https://workpalette.com
 ✗ Got DNS response
-Checking https://talentbridge.io
+Checking https://artista.com
 ✗ Got DNS response
-Checking https://studiomate.io
-Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
-✔ Domain studiomate.io is available!
-Checking https://designerdash.io
-Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
-✔ Domain designerdash.io is available!
-Checking https://graphiconnect.io
-Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
-✔ Domain graphiconnect.io is available!
-Checking https://workcanvas.io
-Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
-✔ Domain workcanvas.io is available!
+Checking https://brightcrowd.com
+✗ Got DNS response
+Checking https://talentedties.com
+✔ Domain talentedties.com is available!
+Checking https://designduo.com
+✗ Got DNS response
+Checking https://createconnect.com
+✗ Got DNS response
+Checking https://designvine.com
+✗ Got DNS response
+Checking https://propalette.com
+✗ Got DNS response
 ---
 Available domains:
-designerlink.io
-creativepair.io
-studiomate.io
-designerdash.io
-graphiconnect.io
-workcanvas.io
+talentedties.com
 ```
 
 ## Additional Options
