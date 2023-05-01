@@ -1,0 +1,117 @@
+# Startup Name Generator with ChatGPT and Domain Availability Checker
+
+## Overview
+
+ChatGPT Name Generator is a small utility that uses ChatGPT to generate creative and unique startup name ideas based on a given description. Additionally, this utility checks for the availability of domain names for the generated startup names. It is a handy tool for entrepreneurs, helping them to find a suitable and available domain name for their startups.
+
+## Installation
+
+### Prerequisites
+
+- Python 3.6 or higher
+- `pip` for installing the required packages
+
+### Steps
+
+1. Clone this repository to your local machine:
+
+```bash
+git clone https://github.com/mylh/chatgpt-name-generator.git
+cd startup-name-generator
+```
+
+2. Create a virtual environment (optional but recommended):
+
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+```
+
+3. Install the required packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Set up your OpenAI API key as an environment variable:
+
+```bash
+export OPENAI_API_KEY="your_api_key"  # On Windows, use `set OPENAI_API_KEY=your_api_key`
+```
+
+**Note**: Replace `your_api_key` with your actual OpenAI API key.
+
+## Usage
+
+Run the `namegen.py` script with a description of your startup:
+
+```bash
+python namegen.py --prompt "A platform for connecting freelance designers with clients"
+```
+
+The script will generate a list of potential startup names and check the availability of the corresponding domain names. The results will be displayed in the terminal.
+
+### Example Output
+
+```
+Getting Ideas for "A platform for connecting freelance designers with clients"...
+Generated names: DesignCloud, DesignerLink, FreelanceMatch, CreativePair, ArtHive, TalentBridge, StudioMate, DesignerDash, GraphiConnect, WorkCanvas.
+Checking https://designcloud.io
+✗ Got DNS response
+Checking https://designerlink.io
+Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
+✔ Domain designerlink.io is available!
+Checking https://freelancematch.io
+✗ Got DNS response
+Checking https://creativepair.io
+Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
+✔ Domain creativepair.io is available!
+Checking https://arthive.io
+✗ Got DNS response
+Checking https://talentbridge.io
+✗ Got DNS response
+Checking https://studiomate.io
+Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
+✔ Domain studiomate.io is available!
+Checking https://designerdash.io
+Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
+✔ Domain designerdash.io is available!
+Checking https://graphiconnect.io
+Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
+✔ Domain graphiconnect.io is available!
+Checking https://workcanvas.io
+Error trying to connect to socket: closing socket - [Errno -2] Name or service not known
+✔ Domain workcanvas.io is available!
+---
+Available domains:
+designerlink.io
+creativepair.io
+studiomate.io
+designerdash.io
+graphiconnect.io
+workcanvas.io
+```
+
+## Additional Options
+
+- To specify a different Top-Level Domain (TLD), use the `--tld` option:
+
+```bash
+python namegen.py --prompt "A platform for connecting freelance designers with clients" --tld "io"
+```
+
+- To provide a comma-separated list of names to check for availability, use the `--names` option:
+
+```bash
+python namegen.py --names "DesignLink, CreativeConnect, ArtistryHub, DesignerMatch, DesignBridge"
+```
+
+- To save the available domain names to an output file, use the `--output` option:
+
+```bash
+python namegen.py --prompt "A platform for connecting freelance designers with clients" --output available_domains.txt
+```
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
