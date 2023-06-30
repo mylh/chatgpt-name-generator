@@ -60,6 +60,7 @@ def check_domains(tld, prompt, names, output):
             "description and you have to generate a list of fun, memorable and "
             "interesting potential names for the project. The names should be "
             "compact and sound nice. Respond with a comma-separated list of names only."
+            "do not repeat domain names suggestions"
         )
         # Get list of names by querying ChatGPT
         response = openai.ChatCompletion.create(
