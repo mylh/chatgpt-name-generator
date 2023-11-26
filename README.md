@@ -101,6 +101,10 @@ python namegen.py --names "DesignLink, CreativeConnect, ArtistryHub, DesignerMat
 python namegen.py --prompt "A platform for connecting freelance designers with clients" --output available_domains.txt
 ```
 
+- To specify OpenAI model to use, use the `--model=gpt-3.5-turbo` option
+
+- To specify DNS servers use `-dns-server="<dns-server1>,<dns-server2>"` option
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import click
+import os
 import dns.resolver
+import click
 import whois
 import openai
-import os
 import retrying
 
 # Set OpenAI API key
@@ -17,8 +17,15 @@ def retry_if_dns_error(exception):
 @retrying.retry(
     wait_fixed=1000, stop_max_attempt_number=3, retry_on_exception=retry_if_dns_error
 )
-def resolve_dns_with_retry(domain):
-    answers = dns.resolver.resolve(domain)
+def resolve_dns_with_retry(domain, dns_servers=None):
+    resolver = dns.resolver.Resolver(configure=False)
+    if dns_servers:
+        resolver.nameservers = dns_servers
+    else:
+        resolver.nameservers = ["8.8.8.8", "8.8.4.4"]
+    resolver.timeout = 5
+    resolver.lifetime = 5
+    answers = resolver.resolve(domain)
     return answers
 
 
@@ -50,7 +57,11 @@ def clean_name_for_domain(name):
 )
 @click.option("--names", default=None, help="Comma-separated list of names to check")
 @click.option("--output", default=None, help="Output file to write available names to")
-def check_domains(tld, prompt, names, output):
+@click.option("--model", default="gpt-3.5-turbo-1106", help="OpenAI model to use")
+@click.option(
+    "--dns-server", default="8.8.8.8,8.8.4.4", help="List of DNS servers to use"
+)
+def check_domains(tld, prompt, names, output, model, dns_server):
     """Check availability of domains for given names and TLD."""
 
     if not names:
@@ -59,43 +70,48 @@ def check_domains(tld, prompt, names, output):
             "You are a domain name generator. You are given a startup project "
             "description and you have to generate a list of fun, memorable and "
             "interesting potential names for the project. The names should be "
-            "compact and sound nice. Respond with a comma-separated list of names only."
+            "compact and sound nice. Respond stricltly with one line of a "
+            "comma-separated list of names"
         )
         # Get list of names by querying ChatGPT
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
         )
-
         # Extract names from OpenAI response
-        names = response.choices[0].message.content.strip().split(",")
-    else:
-        names = names.split(",")
+        names = response.choices[0].message.content.strip()
+        # sometimes model returns "1. Name1\n2. Name2\n3. Name3" list, handle it
+        if names.startswith("1."):
+            # Split the input text into lines
+            lines = names.strip().split("\n")
+            # Remove item numbering and strip whitespace from each line
+            cleaned_lines = [line.split(". ")[1].strip() for line in lines]
+            # Join the cleaned lines into a single CSV string
+            names = ",".join(cleaned_lines)
 
+    names = names.split(",")
     names = [name.strip() for name in names]
     print(f"Generated names: {', '.join(names)}")
-
     names = [clean_name_for_domain(name) for name in names]
-
     available_domains = []
-
+    dns_servers = [x.strip() for x in dns_server.split(",")]
     for name in names:
         domain = name + "." + tld
         click.echo(f"Checking https://{domain}")
         # Check if domain name is valid
         try:
-            res = resolve_dns_with_retry(domain)
+            resolve_dns_with_retry(domain, dns_servers=dns_servers)
         except (
             dns.resolver.NoAnswer,
             dns.resolver.NoNameservers,
-        ) as e:
-            click.echo(f"! Can't check domain: {e}")
+        ) as exc:
+            click.echo(f"! Can't check domain: {exc}")
             continue
-        except dns.name.EmptyLabel as e:
-            click.echo(f"! Invalid domain name: {e}")
+        except dns.name.EmptyLabel as exc:
+            click.echo(f"! Invalid domain name: {exc}")
             continue
         except dns.resolver.NXDOMAIN:
             try:
@@ -112,29 +128,29 @@ def check_domains(tld, prompt, names, output):
                         + f" Domain {domain} is not available via WHOIS"
                     )
                 continue
-            except whois.parser.PywhoisError as e:
-                if "No match for" in str(e):
+            except whois.parser.PywhoisError as exc:
+                if "No match for" in str(exc):
                     available_domains.append(domain)
                     click.echo(
                         click.style("✔", fg="green", bold=True)
                         + f" Domain {domain} is available!"
                     )
                 else:
-                    click.echo(f"! WHOIS error {e}")
+                    click.echo(f"! WHOIS error {exc}")
                 continue
-        click.echo(click.style("✗", fg="red", bold=True) + f" Got DNS response")
+        click.echo(click.style("✗", fg="red", bold=True) + " Got DNS response")
 
     if available_domains:
         click.echo("---\nAvailable domains:")
         for domain in available_domains:
             click.echo(domain)
         if output:
-            with open(output, "a") as f:
-                f.write("\n".join(available_domains))
-                f.write("\n")
+            with open(output, "a", encoding="utf-8") as out:
+                out.write("\n".join(available_domains))
+                out.write("\n")
     else:
         click.echo("No available domains found for the given names and TLD.")
 
 
 if __name__ == "__main__":
-    check_domains()
+    check_domains()  # pylint: disable=no-value-for-parameter
