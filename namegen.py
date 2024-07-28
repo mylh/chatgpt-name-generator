@@ -57,7 +57,7 @@ def clean_name_for_domain(name):
 )
 @click.option("--names", default=None, help="Comma-separated list of names to check")
 @click.option("--output", default=None, help="Output file to write available names to")
-@click.option("--model", default="gpt-3.5-turbo-1106", help="OpenAI model to use")
+@click.option("--model", default="gpt-4o", help="OpenAI model to use")
 @click.option(
     "--dns-server", default="8.8.8.8,8.8.4.4", help="List of DNS servers to use"
 )
