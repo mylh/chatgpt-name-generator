@@ -48,56 +48,46 @@ def clean_name_for_domain(name):
     return cleaned
 
 
-@click.command()
-@click.option("--tld", default="com", help="Top-level domain to check against")
-@click.option(
-    "--prompt",
-    default="Startup that helps people find the best deals on flights",
-    help="Prompt to query ChatGPT for list of names",
-)
-@click.option("--names", default=None, help="Comma-separated list of names to check")
-@click.option("--output", default=None, help="Output file to write available names to")
-@click.option("--model", default="gpt-4o", help="OpenAI model to use")
-@click.option(
-    "--dns-server", default="8.8.8.8,8.8.4.4", help="List of DNS servers to use"
-)
-def check_domains(tld, prompt, names, output, model, dns_server):
-    """Check availability of domains for given names and TLD."""
+def get_ideas_from_chatgpt(prompt, model="gpt-4o", temperature=0.0, exclude=None):
+    """
+    Get a list of names from ChatGPT based on a prompt.
+    """
+    system_prompt = (
+        "You are a domain name generator. You are given a startup project "
+        "description and you have to generate a list of fun, memorable and "
+        "interesting potential names for the project. The names should be "
+        "compact and sound nice. Respond stricltly with one line of a "
+        "comma-separated list of names."
+    )
 
-    if not names:
-        print(f'Getting Ideas for "{prompt}"...')
-        system_prompt = (
-            "You are a domain name generator. You are given a startup project "
-            "description and you have to generate a list of fun, memorable and "
-            "interesting potential names for the project. The names should be "
-            "compact and sound nice. Respond stricltly with one line of a "
-            "comma-separated list of names"
-        )
-        # Get list of names by querying ChatGPT
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ],
-        )
-        # Extract names from OpenAI response
-        names = response.choices[0].message.content.strip()
-        # sometimes model returns "1. Name1\n2. Name2\n3. Name3" list, handle it
-        if names.startswith("1."):
-            # Split the input text into lines
-            lines = names.strip().split("\n")
-            # Remove item numbering and strip whitespace from each line
-            cleaned_lines = [line.split(". ")[1].strip() for line in lines]
-            # Join the cleaned lines into a single CSV string
-            names = ",".join(cleaned_lines)
+    if exclude:
+        system_prompt += f"Do not suggest names: {" ".join(exclude)}"
 
-    names = names.split(",")
-    names = [name.strip() for name in names]
-    print(f"Generated names: {', '.join(names)}")
-    names = [clean_name_for_domain(name) for name in names]
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=temperature,
+    )
+    names = response.choices[0].message.content.strip()
+    # sometimes model returns "1. Name1\n2. Name2\n3. Name3" list, handle it
+    if names.startswith("1."):
+        # Split the input text into lines
+        lines = names.strip().split("\n")
+        # Remove item numbering and strip whitespace from each line
+        cleaned_lines = [line.split(". ")[1].strip() for line in lines]
+        # Join the cleaned lines into a single CSV string
+        names = ",".join(cleaned_lines)
+    return names
+
+
+def check_names(names, tld, dns_servers=None):
+    """
+    Check the availability of a list of domain names.
+    """
     available_domains = []
-    dns_servers = [x.strip() for x in dns_server.split(",")]
     for name in names:
         domain = name + "." + tld
         click.echo(f"Checking https://{domain}")
@@ -138,18 +128,61 @@ def check_domains(tld, prompt, names, output, model, dns_server):
                 else:
                     click.echo(f"! WHOIS error {exc}")
                 continue
+        except Exception as exc:
+            click.echo(f"! Error checking domain: {exc}")
         click.echo(click.style("✗", fg="red", bold=True) + " Got DNS response")
+    return available_domains
 
-    if available_domains:
-        click.echo("---\nAvailable domains:")
-        for domain in available_domains:
-            click.echo(domain)
-        if output:
-            with open(output, "a", encoding="utf-8") as out:
-                out.write("\n".join(available_domains))
-                out.write("\n")
-    else:
-        click.echo("No available domains found for the given names and TLD.")
+
+@click.command()
+@click.option("--tld", default="com", help="Top-level domain to check against")
+@click.option(
+    "--prompt",
+    default="Startup that helps people find the best deals on flights",
+    help="Prompt to query ChatGPT for list of names",
+)
+@click.option("--names", default=None, help="Comma-separated list of names to check")
+@click.option("--output", default=None, help="Output file to write available names to")
+@click.option("--model", default="gpt-4o", help="OpenAI model to use")
+@click.option("--temperature", default=0.0, help="Temperature for OpenAI model")
+@click.option(
+    "--dns-server", default="8.8.8.8,8.8.4.4", help="List of DNS servers to use"
+)
+def check_domains(tld, prompt, names, output, model, temperature, dns_server):
+    """Check availability of domains for given names and TLD."""
+
+    all_names = set()
+    while True:
+        if not names:
+            print(f'Getting Ideas for "{prompt}"...')
+            names = get_ideas_from_chatgpt(prompt, model=model, temperature=temperature)
+        names = names.split(",")
+
+        print(f"Generated names: {', '.join(names)}")
+        names = [clean_name_for_domain(name) for name in names]
+
+        # filter out already checked names
+        names = [name for name in names if name not in all_names]
+
+        available_domains = []
+        dns_servers = [x.strip() for x in dns_server.split(",")]
+        available_domains = check_names(names, tld, dns_servers)
+        if available_domains:
+            click.echo("---\nAvailable domains:")
+            for domain in available_domains:
+                click.echo(domain)
+            if output:
+                with open(output, "a", encoding="utf-8") as out:
+                    out.write("\n".join(available_domains))
+                    out.write("\n")
+        else:
+            click.echo("No available domains found for the given names and TLD.")
+
+        all_names.update(names)
+        if click.confirm("Do you want to generate more names?", default=True):
+            names = None
+        else:
+            break
 
 
 if __name__ == "__main__":
